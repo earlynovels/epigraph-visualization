@@ -9,20 +9,17 @@
   <link href="node_modules/nouislider/distribute/nouislider.css" rel="stylesheet">
   <!-- <link href="https://fonts.googleapis.com/css?family=Lora:400,400i" rel="stylesheet"> -->
   <!--set height based on number of elements on each side. (~ * 10)-->
-  <div id="div1" class="div1">
-    <div id="slider" class="slider"></div>
-  </div>
 
   <style>
-  html, body, .div1 {
+  body, #content {
     height: 100%;
     width: 100%;
   }
-  div {
+  /*div {
     height: 100%;
-  }
+  }*/
   svg text.otherSide {
-    opacity: .54;
+    stroke: grey;
     cursor: default;
   }
   svg text.topLeftText:hover {
@@ -52,15 +49,34 @@
     cursor: pointer;
   }
 
+  svg rect.hidden {
+    opacity: 0;
+  }
+
+  svg line.deselectedLineOn {
+    stroke: LightGrey;
+  }
+  p {
+    position: relative;
+    font-weight: bold;
+    left: 20px;
+  }
 
   </style>
 </head>
 
 <body>
+  <div id="visualization">
+    <div id="slider"></div>
+  </div>
+
+  <div class="about">
+    <p>If you wish to define your own left-attaching diacritics/phones, type them below. Most diacritics are recognized by default. For a complete list, see the bottom of the page.</p>
+  </div>
+
   <script src="node_modules/nouislider/distribute/nouislider.min.js"></script>
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <script>
-
   // set design variables
   var leftAlign = 600;
   // MINIMUM 300
@@ -101,6 +117,7 @@
   var fontSizeSorters = 15;
   var maxString = "0px";
   var maxNum = 0;
+  // var linesPresent = false;
   var nodeTextListLeft = [];
   var nodeTextListRight = [];
 
@@ -216,16 +233,18 @@
       for (var j=0;j<temp.length;j++){
         removableArray.push(temp[j]);
       }
+      // LINE
       for (var i=0;i<hoverListSelectionsLine.length;i++){
-        hoverListSelectionsLine[i].style("fill", highlightColorClick).style("stroke", highlightColorClick).style("stroke-width", thickLineWidth);
+        hoverListSelectionsLine[i].attr("fill", highlightColorClick).attr("stroke", highlightColorClick).attr("stroke-width", thickLineWidth);
+        hoverListSelectionsLine[i].attr("class","selectedLine");
       }
       // NODE
       for (var i=0;i<hoverListSelectionsNode.length;i++){
-        hoverListSelectionsNode[i].style("fill", highlightColorClick).style("stroke", highlightColorClick).style("stroke-width", thickNodeWidth);
+        hoverListSelectionsNode[i].attr("fill", highlightColorClick).attr("stroke", highlightColorClick).attr("stroke-width", thickNodeWidth);
       }
       // TEXT
       for (var i=0;i<hoverListSelectionsText.length;i++){
-        hoverListSelectionsText[i].style("fill", highlightColorClick).style("stroke", highlightColorClick);
+        hoverListSelectionsText[i].attr("fill", highlightColorClick).attr("stroke", highlightColorClick);
       }
       for (var i=0;i<hoverListSelectionsText2.length;i++){
         hoverListSelectionsText2[i].attr("class", "selected").style("cursor","default");
@@ -303,29 +322,30 @@
       var allLeft = d3.selectAll(".otherSide").attr("class","left");
     }
 
-    //temporarally set dInside to false
-    var dInside=false;
-    if (d.side=="left" && allowedLeft==true){
-      var insideCheck = d3.selectAll('line[id='+getId(d)+']').data();
-    } else if (d.side=="right" && allowedRight==true){
-      var insideCheck = d3.selectAll('line[data-target='+getId(d)+']').data();
-    }
-    for (i=0;i<removableArray.length;i++){
-      for (var j=0;j<insideCheck.length;j++){
-        if (removableArray[i] == insideCheck[j]){
-          dInside=true;
-        }
-      }
-    }
     // LEFT
     if (d.side=="left" && allowedLeft==true){
+      //temporarally set dInside to false
+      var dInside=false;
+      if (d.side=="left" && allowedLeft==true){
+        var insideCheck = d3.selectAll('line[id='+getId(d)+']').data();
+      } else if (d.side=="right" && allowedRight==true){
+        var insideCheck = d3.selectAll('line[data-target='+getId(d)+']').data();
+      }
+      for (i=0;i<removableArray.length;i++){
+        for (var j=0;j<insideCheck.length;j++){
+          if (removableArray[i] == insideCheck[j]){
+            dInside=true;
+          }
+        }
+      }
       var temp = d3.selectAll('line[id='+getId(d)+']').data();
       for (var i=0;i<temp.length;i++){
-        var thisLine = d3.selectAll('line[id='+getId(d)+'],line[data-target='+getId(d)+']').style("stroke-width", thickLineWidth);
+        var thisLine = d3.selectAll('line[id='+getId(d)+'],line[data-target='+getId(d)+']').attr("stroke-width", thickLineWidth);
         var thisNode = d3.selectAll('circle[id='+getId(d)+'],circle[id='+d.target+'],circle[data-target='+getId(d)+'],circle[id='+temp[i].target+']');
         var thisNode2 = d3.selectAll('circle[data-target='+getId(d)+'],circle[id='+temp[i].target+']');
         var thisText = d3.selectAll('text[id='+getId(d)+'],text[data-target='+getId(d)+'],text[id='+temp[i].target+']');
         var thisText2 = d3.selectAll('text[data-target='+getId(d)+'],text[id='+temp[i].target+']');
+        thisLine.attr("class","selectedLine");
         hoverListSelectionsLine.push(thisLine);
         hoverListSelectionsNode.push(thisNode);
         hoverListSelectionsText.push(thisText);
@@ -333,11 +353,12 @@
         // if not clicked on
         if (dInside==false){
           //highlight text
-          thisLine.style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover);
-          thisNode.style("stroke-width", thickNodeWidth).style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover).style("cursor","pointer");
-          thisText.style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover).style("cursor","pointer");
+          thisLine.attr("fill", highlightColorLeftHover).attr("stroke", highlightColorLeftHover);
+          thisNode.attr("stroke-width", thickNodeWidth).attr("fill", highlightColorLeftHover).attr("stroke", highlightColorLeftHover).style("cursor","pointer");
+          thisText.attr("fill", highlightColorLeftHover).attr("stroke", highlightColorLeftHover).style("cursor","pointer");
           thisNode2.attr("class","selected").style("cursor","default");
           thisText2.attr("class","selected").style("cursor","default");
+          thisLine.attr("class","selectedLine");
           thisLine.moveToFront();
           thisNode.moveToFront();
         }
@@ -345,9 +366,23 @@
     //RIGHT
     } else if (d.side=="right" && allowedRight==true){
       // if not clicked on
+      //temporarally set dInside to false
+      var dInside=false;
+      if (d.side=="left" && allowedLeft==true){
+        var insideCheck = d3.selectAll('line[id='+getId(d)+']').data();
+      } else if (d.side=="right" && allowedRight==true){
+        var insideCheck = d3.selectAll('line[data-target='+getId(d)+']').data();
+      }
+      for (i=0;i<removableArray.length;i++){
+        for (var j=0;j<insideCheck.length;j++){
+          if (removableArray[i] == insideCheck[j]){
+            dInside=true;
+          }
+        }
+      }
       var temp = d3.selectAll('line[data-target='+getId(d)+']').data();
       for (var i=0;i<temp.length;i++){
-        var thisLine = d3.selectAll('line[id='+getId(d)+'],line[data-target='+getId(d)+'],line[data-target='+getId(d)+']').style("stroke-width", thickLineWidth);
+        var thisLine = d3.selectAll('line[id='+getId(d)+'],line[data-target='+getId(d)+'],line[data-target='+getId(d)+']').attr("stroke-width", thickLineWidth);
         if (typeLeft=="title"){
           var thisNode = d3.selectAll('circle[id='+getId(d)+'],circle[id='+d.target+'],circle[data-idTitle='+temp[i].id+'],circle[data-target='+getId(d)+'],circle[id='+temp[i].id+']');
           var thisNode2 = d3.selectAll('circle[data-target='+getId(d)+'],circle[data-idTitle='+temp[i].id+']');
@@ -359,6 +394,7 @@
           var thisText = d3.selectAll('text[id='+getId(d)+'],text[data-idAuthor='+temp[i].idAuthor+'],text[data-target='+getId(d)+'],text[data-idTitle='+temp[i].id+']')
           var thisText2 = d3.selectAll('text[data-idAuthor='+temp[i].idAuthor+'],text[data-target='+getId(d)+'],text[data-idTitle='+temp[i].id+']');
         }
+        thisLine.attr("class","selectedLine");
         hoverListSelectionsLine.push(thisLine);
         hoverListSelectionsNode.push(thisNode);
         hoverListSelectionsText.push(thisText);
@@ -366,11 +402,12 @@
         // if not clicked on
         if (dInside==false){
           //highlight text
-          thisLine.style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover);
-          thisNode.style("stroke-width", thickNodeWidth).style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover).style("cursor","pointer");
-          thisText.style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover).style("cursor","pointer");
+          thisLine.attr("fill", highlightColorLeftHover).attr("stroke", highlightColorLeftHover);
+          thisNode.attr("stroke-width", thickNodeWidth).attr("fill", highlightColorLeftHover).attr("stroke", highlightColorLeftHover).style("cursor","pointer");
+          thisText.attr("fill", highlightColorLeftHover).attr("stroke", highlightColorLeftHover).style("cursor","pointer");
           thisText2.attr("class","selected").style("cursor","default");
           thisNode2.attr("class","selected").style("cursor","default");
+          thisLine.attr("class","selectedLine");
           thisLine.moveToFront();
           thisNode.moveToFront();
         }
@@ -416,16 +453,21 @@
         //if the data-target is not inside
         // NODE
         for (var i=0;i<hoverListSelectionsNode.length;i++){
-          hoverListSelectionsNode[i].style("fill", regNodeColor).style("stroke", regColor).style("stroke-width", regNodeWidth).style("cursor","default");
+          hoverListSelectionsNode[i].attr("fill", regNodeColor).attr("stroke", regColor).attr("stroke-width", regNodeWidth).style("cursor","default");
         }
         // LINE
         for (var i=0;i<hoverListSelectionsLine.length;i++){
-          hoverListSelectionsLine[i].style("fill", regLineColor).style("stroke", regLineColor).style("stroke-width", regLineWidth);
+          hoverListSelectionsLine[i].attr("fill", regLineColor).attr("stroke", regLineColor).attr("stroke-width", regLineWidth);
+          // if (linesPresent==false){
+          //   hoverListSelectionsLine[i].attr("class","deselectedLine");
+          // } else {
+            hoverListSelectionsLine[i].attr("class","deselectedLineOn");
+          // }
           hoverListSelectionsLine[i].moveToBack();
         }
         // TEXT
         for (var i=0;i<hoverListSelectionsText.length;i++){
-          hoverListSelectionsText[i].style("fill", regColor).style("stroke", regColor).style("cursor","default");
+          hoverListSelectionsText[i].attr("fill", regColor).attr("stroke", regColor).style("cursor","default");
         }
         if (targetInside==false){
           for (var i=0;i<hoverListSelectionsText2.length;i++){
@@ -436,9 +478,9 @@
             }
           }
         } else {
-          var insideNode = d3.selectAll('circle[id='+target.target+']').style("fill",highlightColorLeftClick).style("stroke",highlightColorLeftClick);
-          var insideText = d3.selectAll('text[id='+target.target+']').style("fill",highlightColorLeftClick).style("stroke",highlightColorLeftClick);
-          insideNode.style("stroke-width", thickNodeWidth);
+          var insideNode = d3.selectAll('circle[id='+target.target+']').attr("fill",highlightColorLeftClick).attr("stroke",highlightColorLeftClick);
+          var insideText = d3.selectAll('text[id='+target.target+']').attr("fill",highlightColorLeftClick).attr("stroke",highlightColorLeftClick);
+          insideNode.attr("stroke-width", thickNodeWidth);
         }
       }
       hoverListSelectionsLine.length = 0;
@@ -473,16 +515,21 @@
         //deselect
         // NODE
         for (var i=0;i<hoverListSelectionsNode.length;i++){
-          hoverListSelectionsNode[i].style("fill", regNodeColor).style("stroke", regColor).style("stroke-width", regNodeWidth).style("cursor","default");
+          hoverListSelectionsNode[i].attr("fill", regNodeColor).attr("stroke", regColor).attr("stroke-width", regNodeWidth).style("cursor","default");
         }
         // LINE
         for (var i=0;i<hoverListSelectionsLine.length;i++){
-          hoverListSelectionsLine[i].style("fill", regLineColor).style("stroke", regLineColor).style("stroke-width", regLineWidth);
+          hoverListSelectionsLine[i].attr("fill", regLineColor).attr("stroke", regLineColor).attr("stroke-width", regLineWidth);
+          // if (linesPresent==false){
+          //   hoverListSelectionsLine[i].attr("class","deselectedLine");
+          // } else {
+            hoverListSelectionsLine[i].attr("class","deselectedLineOn");
+          // }
           hoverListSelectionsLine[i].moveToBack();
         }
         // TEXT
         for (var i=0;i<hoverListSelectionsText.length;i++){
-          hoverListSelectionsText[i].style("fill", regColor).style("stroke", regColor).style("cursor","default");
+          hoverListSelectionsText[i].attr("fill", regColor).attr("stroke", regColor).style("cursor","default");
         }
         if (targetInside==false){
           for (var i=0;i<hoverListSelectionsText2.length;i++){
@@ -493,9 +540,9 @@
             }
           }
         } else {
-          var insideNode = d3.selectAll('circle[data-idTitle='+target.idTitle+']').style("fill",highlightColorRightClick).style("stroke",highlightColorRightClick);
-          var insideText = d3.selectAll('text[data-idTitle='+target.idTitle+']').style("fill",highlightColorRightClick).style("stroke",highlightColorRightClick);
-          insideNode.style("stroke-width", thickNodeWidth);
+          var insideNode = d3.selectAll('circle[data-idTitle='+target.idTitle+']').attr("fill",highlightColorRightClick).attr("stroke",highlightColorRightClick);
+          var insideText = d3.selectAll('text[data-idTitle='+target.idTitle+']').attr("fill",highlightColorRightClick).attr("stroke",highlightColorRightClick);
+          insideNode.attr("stroke-width", thickNodeWidth);
         }
       }
       hoverListSelectionsLine.length = 0;
@@ -570,6 +617,7 @@
       nodeTextListLeft.length = 0;
       nodeTextListRight.length = 0;
       var counter = 0;
+      var largestNode = 0;
       var yPositions = 0;
 
       // make svg's height match height of animation
@@ -923,7 +971,7 @@
           }
         })
         .attr("y", function() {
-          var total = Number(topAlign) - Number(betweenSpaceY)/3 - 2;
+          var total = Number(topAlign) - Number(betweenSpaceY)/3 - 1;
           return total;
         })
         .text("↓")
@@ -943,7 +991,7 @@
           }
         })
         .attr("y", function() {
-          var total = Number(topAlign) - Number(betweenSpaceY)/3 - 2;
+          var total = Number(topAlign) - Number(betweenSpaceY)/3 - 1;
           return total;
         })
         .text("↓")
@@ -957,14 +1005,19 @@
       var connectLine = svg.selectAll("connectLine")
           .data(dataSubsetLeft)
           .enter().append("line")
-          .attr("class", "line")
+          .attr("class", function(){
+            // if (linesPresent==false){
+            //   return "deselectedLine"
+            // } else {
+              return "deselectedLineOn"
+            // }
+          })
           .attr("id", function (d) {return getId(d);})
           .attr("data-target", function (d) {return d.target;})
           .attr("data-idTitle", function(d) {return d.idTitle;})
           .attr("x1", function(d) {return leftAlign;})
           .attr("y1", function(d) {
-            // HERE HERE HERE
-            if (typeLeft=="title"){
+            if (typeLeft == "title"){
               var type = d.id;
             } else {
               var type = d.idAuthor;
@@ -981,8 +1034,8 @@
             var total = topAlign + (index*betweenSpaceY);
             return total;
           })
-          .style("stroke-width", regLineWidth)
-          .style("stroke", regLineColor);
+          .attr("stroke-width", regLineWidth)
+          .attr("stroke", regLineColor);
 
 
       // create the circles next to the words on the left
@@ -1002,11 +1055,14 @@
           .attr("cy", function(d) {
             var index = dataNodeText.indexOf(d);
             var total = Number(topAlign) + (Number(index)*Number(betweenSpaceY));
+            if (total > largestNode){
+              largestNode = total;
+            }
             return total;
           })
-          .style("fill", regNodeColor)
-          .style("stroke-width",regNodeWidth)
-          .style("stroke", regColor)
+          .attr("fill", regNodeColor)
+          .attr("stroke-width",regNodeWidth)
+          .attr("stroke", regColor)
           .on("click", function(d,i){click(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray);})
           .on("mouseover", function(d,i){mouseover(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);})
           .on("mouseout", function(d,i){mouseout(d,i,removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2)});
@@ -1028,11 +1084,14 @@
           .attr("cy", function(d) {
             var index = dataNodeText.indexOf(d)-nodeTextListLeft.length;
             var total = Number(topAlign) + (Number(index)*Number(betweenSpaceY));
+            if (total > largestNode){
+              largestNode = total;
+            }
             return total;
           })
-          .style("fill", regNodeColor)
-          .style("stroke-width",regNodeWidth)
-          .style("stroke", regColor)
+          .attr("fill", regNodeColor)
+          .attr("stroke-width",regNodeWidth)
+          .attr("stroke", regColor)
           .on("click", function(d,i){click(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray);})
           .on("mouseover", function(d,i){mouseover(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);})
           .on("mouseout", function(d,i){mouseout(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2)});
@@ -1109,14 +1168,27 @@
           .on("mouseover", function(d,i){mouseover(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);})
           .on("mouseout", function(d,i){mouseout(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);});
 
+        // var hiddenRect = svg.append("rect")
+        //   .attr("x", function() {return leftAlign+(regNodeWidth*8);})
+        //   .attr("y", function() {return topAlign;})
+        //   .attr("width", function() {return (betweenSpaceX-(regNodeWidth*16));})
+        //   .attr("height", function() {return largestNode-topAlign;})
+        //   .attr("class","hidden")
+        //   .on("click", function() {
+        //     if (linesPresent == true) {
+        //       linesPresent = false;
+        //     } else {
+        //       linesPresent = true;
+        //     }
+        //   });
 
       // get lowest y position. This sets height of slider
       // as well as height of SVG
       maxNum = (topAlign+(betweenSpaceY*(counter+1)));
       maxString = maxNum.toString()+"px";
-      document.querySelector('.slider').style.top = maxString;
-      document.querySelector('.slider').style.left = (leftAlign+6).toString()+"px";
-      document.querySelector('.slider').style.width = (betweenSpaceX).toString()+"px";
+      document.querySelector('#slider').style.top = maxString;
+      document.querySelector('#slider').style.left = (leftAlign+6).toString()+"px";
+      document.querySelector('#slider').style.width = (betweenSpaceX).toString()+"px";
       svg.attr("height",(maxNum+betweenSpaceY).toString()+"px");
     }
     // create slider
