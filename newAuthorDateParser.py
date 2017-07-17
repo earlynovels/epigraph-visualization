@@ -159,7 +159,7 @@ def parseName(name):
 
 def parseFile():
     targetFile = open("datesComplete.tsv","w")
-    with io.open("newfile.tsv", "r", encoding="utf-8") as inputFile:
+    with io.open("initialCombined.tsv", "r", encoding="utf-8") as inputFile:
         # data = inputFile.read()
         lineNum = 1
         tab = "\t"
