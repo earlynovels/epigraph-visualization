@@ -17,9 +17,9 @@ manualAdditionsDates = []
 # Add strings here to include them in the parser for the CLI manual check
 manualSeparators = [',', ' of ', ' in ', ' a ', ' an ', '.', ' to ', ' In ']
 # Names of files to use
-titlesInputFile = 'newfile1-super.tsv'
+titlesInputFile = 'datesComplete.tsv'
 #titlesInputFile = 'to_finish_later.tsv'
-titlesOutputFile = 'continue.tsv'
+titlesOutputFile = 'datesAndTitlesComplete.tsv'
 
 
 def searchDateRange(result, given):
@@ -158,7 +158,7 @@ def parseName(name):
     return name
 
 def parseFile():
-    targetFile = open("newfile1-super.tsv","w")
+    targetFile = open("datesComplete.tsv","w")
     with io.open("newfile.tsv", "r", encoding="utf-8") as inputFile:
         # data = inputFile.read()
         lineNum = 1
