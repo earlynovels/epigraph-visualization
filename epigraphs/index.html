@@ -1,7 +1,7 @@
 <!DOCTYPE html>
+<!-- Epigraph Visualization -->
 <html lang="en">
 
-<!-- Deal with BC -->
 <head>
   <meta charset="utf-8">
   <link href="https://fonts.googleapis.com/css?family=Bellefair" rel="stylesheet">
@@ -15,9 +15,6 @@
     height: 100%;
     width: 100%;
   }
-  /*div {
-    height: 100%;
-  }*/
   svg text.otherSide {
     stroke: grey;
     cursor: default;
@@ -37,16 +34,16 @@
     cursor: default;
   }
 
-  svg text.selectedHeading {
+  svg text.selectedHeading:hover {
     fill: RoyalBlue;
     stroke: RoyalBlue;
     cursor: default;
   }
 
-  svg text.deselectedHeading {
-    fill: black;
-    stroke: black;
-    cursor: pointer;
+  svg text.deselectedHeading:hover {
+    fill: RoyalBlue;
+    stroke: RoyalBlue;
+    cursor: default;
   }
 
   svg rect.hidden {
@@ -59,19 +56,23 @@
   p {
     position: relative;
     font-weight: bold;
-    left: 20px;
+    left: 400px;
+  }
+  p1 {
+    position: relative;
+    left: -4000px;
   }
 
   </style>
 </head>
 
 <body>
+  <p1><a href="#about">Jump to About</a></p1>
   <div id="visualization">
     <div id="slider"></div>
   </div>
-
-  <div class="about">
-    <p>If you wish to define your own left-attaching diacritics/phones, type them below. Most diacritics are recognized by default. For a complete list, see the bottom of the page.</p>
+  <div id="about">
+    <p>If you wish to define your own left-attaching diacritics/phones, type them below. Most diacritics are recognized by default. For a complete list, see the bottom <br /> of the page.</p>
   </div>
 
   <script src="node_modules/nouislider/distribute/nouislider.min.js"></script>
@@ -112,8 +113,7 @@
 
 
   // non-design global varibles. Do not modify
-  var variableHeadingTitles = "deselectedHeading";
-  var variableHeadingAuthors = "selectedHeading";
+  var headingAuthors = true;
   var fontSizeSorters = 15;
   var maxString = "0px";
   var maxNum = 0;
@@ -629,9 +629,10 @@
 
       var svg = d3.select("div")
       .append("svg")
-      .attr("height",svgHeight)
-      .attr("width","100%")
-      .attr("class","innerSVG");
+        .attr("height",svgHeight)
+        .attr("width","100%")
+        .attr("class","innerSVG")
+        .attr("aria-hidden","true");
 
       // split the data until it only contains from min to max date
       data1 = splitData(minDate,maxDate,data);
@@ -837,39 +838,51 @@
           .attr("stroke-width", thickLineWidth);
 
       // create text saying "map titles to epigraph authors"
-      var titlesSel = svg.append("text")
-          .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
-          .attr("y", function() {return topAlign - (betweenSpaceY*1.7);})
-          .attr("class",variableHeadingTitles)
-          .text("Map titles to epigraph authors")
-          .attr("text-anchor", function() {return "middle";})
-          .attr("font-family", "Crimson Text")
-          .attr("font-size", fontSize)
-          .attr("fill", regColor)
-          .attr("stroke", regColor)
-          .on("click",function(){
-            if (variableHeadingTitles=="deselectedHeading"){
-              // change classes around for css hover functionality
-              current = titlesSel;
-              previous = authorsSel;
-              current.attr("class","selectedHeading");
-              previous.attr("class","deselectedHeading");
-              variableHeadingTitles = "selectedHeading";
-              variableHeadingAuthors = "deselectedHeading";
-              // set global variable
-              typeLeft = "title";
-              // remove svg and redraw everything
-              d3.select("svg").remove();
-              draw(originalData);
-            }
-          });
+      // var titlesSel = svg.append("text")
+      //     .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
+      //     .attr("y", function() {return topAlign - (betweenSpaceY*1.7);})
+      //     .attr("class",variableHeadingTitles)
+      //     .text("Map titles to epigraph authors")
+      //     .attr("text-anchor", function() {return "middle";})
+      //     .attr("font-family", "Crimson Text")
+      //     .attr("font-size", fontSize)
+      //     .attr("fill", regColor)
+      //     .attr("stroke", regColor)
+      //     .on("click",function(){
+      //       if (variableHeadingTitles=="deselectedHeading"){
+      //         // change classes around for css hover functionality
+      //         current = titlesSel;
+      //         previous = authorsSel;
+      //         current.attr("class","selectedHeading");
+      //         previous.attr("class","deselectedHeading");
+      //         variableHeadingTitles = "selectedHeading";
+      //         variableHeadingAuthors = "deselectedHeading";
+      //         // set global variable
+      //         typeLeft = "title";
+      //         // remove svg and redraw everything
+      //         d3.select("svg").remove();
+      //         draw(originalData);
+      //       }
+      //     });
 
       // create text saying "map authors to epigraph authors"
-      var authorsSel = svg.append("text")
+      var authOrTitle = svg.append("text")
           .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
-          .attr("y", function() {return topAlign - (betweenSpaceY);})
-          .attr("class", variableHeadingAuthors)
-          .text("Map authors to epigraph authors")
+          .attr("y", function() {return topAlign - (betweenSpaceY*1.7);})
+          .attr("class", function () {
+            if (headingAuthors == true){
+              return "selectedHeading";
+            } else {
+              return "deselectedHeading";
+            }
+          })
+          .text(function(){
+            if (headingAuthors == false){
+              return "Map titles to epigraph authors";
+            } else {
+              return "Map authors to epigraph authors";
+            }
+          })
           .attr("text-anchor", function() {return "middle";})
           .attr("font-family", "Crimson Text")
           .attr("font-size", fontSize)
@@ -877,20 +890,22 @@
           .attr("fill", regColor)
           .attr("stroke", regColor)
           .on("click",function(){
-            if (variableHeadingAuthors=="deselectedHeading"){
               // change classes around for css hover functionality
-              current = authorsSel;
-              previous = titlesSel;
-              current.attr("class","selectedHeading");
-              previous.attr("class","deselectedHeading");
-              variableHeadingAuthors = "selectedHeading";
-              variableHeadingTitles = "deselectedHeading";
+            authOrTitle.attr("class",function(){
+              if (headingAuthors == true){
+                typeLeft = "title";
+                headingAuthors = false;
+                return "selectedHeading";
+              } else {
+                typeLeft = "author";
+                headingAuthors = true;
+                return "deselectedHeading";
+              }
+            });
+            d3.select("svg").remove();
+            draw(originalData);
               // set global variable
-              typeLeft = "author";
               // remove svg and redraw everything
-              d3.select("svg").remove();
-              draw(originalData);
-            }
           });
 
       // create sorter for left side
