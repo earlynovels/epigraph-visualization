@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Deal with BC -->
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css?family=Bellefair" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Crimson+Text:400i" rel="stylesheet">
+  <link href="node_modules/nouislider/distribute/nouislider.css" rel="stylesheet">
+  <!-- <link href="https://fonts.googleapis.com/css?family=Lora:400,400i" rel="stylesheet"> -->
+  <!--set height based on number of elements on each side. (~ * 10)-->
+  <div id="div1" class="div1">
+    <div id="slider" class="slider"></div>
+  </div>
+
+  <style>
+  html, body, .div1 {
+    height: 100%;
+    width: 100%;
+  }
+  div {
+    height: 100%;
+  }
+  svg text.otherSide {
+    opacity: .54;
+    cursor: default;
+  }
+  svg text.topLeftText:hover {
+    fill: RoyalBlue;
+    stroke: RoyalBlue;
+    cursor: pointer;
+  }
+  svg text.topRightText:hover {
+    fill: RoyalBlue;
+    stroke: RoyalBlue;
+    cursor: pointer;
+  }
+
+  svg text.titleText {
+    cursor: default;
+  }
+
+  svg text.selectedHeading {
+    fill: RoyalBlue;
+    stroke: RoyalBlue;
+    cursor: default;
+  }
+
+  svg text.deselectedHeading {
+    fill: black;
+    stroke: black;
+    cursor: pointer;
+  }
+
+
+  </style>
+</head>
+
+<body>
+  <script src="node_modules/nouislider/distribute/nouislider.min.js"></script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script>
+
+  // set design variables
+  var leftAlign = 600;
+  // MINIMUM 300
+  var betweenSpaceX = 600;
+  var topAlign = 200;
+  var betweenSpaceY = 45;
+  var nodeSize = 6;
+  var highlightColorLeftClick = "navy";
+  var highlightColorRightClick = "navy";
+  var highlightColorLeftHover = "RoyalBlue";
+  var highlightColorRightHover = "RoyalBlue";
+  var regColor = "black";
+  var regLineColor = "rgb(70, 70, 70)";
+  var regNodeColor = "grey";
+  var regLineWidth = "1"
+  var regNodeWidth = "1"
+  var thickLineWidth = "3"
+  // make this higher if you want the nodes to grow when selected/hovered over
+  var thickNodeWidth = "1"
+  var font = "Bellefair";
+  var fontSize = "20px";
+  var fontSizeTitle = "23px";
+  // default dates
+  var minDate = 1700;
+  var maxDate = 1790;
+  // default author view on left (as opposed to title)
+  var typeLeft = "author";
+  // default 'alphabetize' sorting on left (as opposed to 'date')
+  var sortLeft = "alphabetize";
+  // default 'date' sorting on right (as opposed to 'alphabetize')
+  var sortRight = "date";
+
+
+
+  // non-design global varibles. Do not modify
+  var variableHeadingTitles = "deselectedHeading";
+  var variableHeadingAuthors = "selectedHeading";
+  var fontSizeSorters = 15;
+  var maxString = "0px";
+  var maxNum = 0;
+  var nodeTextListLeft = [];
+  var nodeTextListRight = [];
+
+  //selection is added to array each time it's come across.
+  //This function counts up the number of a particullar element,
+  //then mods by 2
+  function getModNumberElem(word, array){
+    var counterTemp = 0;
+    word = word.datum();
+    for (k=0;k<array.length;k++){
+      var wordHere = array[k].datum();
+      if (wordHere==word) {
+        counterTemp++;
+      }
+    }
+    return counterTemp%2;
+  }
+
+  //Function to remove an item from an array.
+  //Analagous to Python's remove() for lists
+  function remove(word, array){
+    var index = array.indexOf(word);
+    return array.splice(index,1);
+  }
+
+  // strip punctuation and spaces from titles and authors
+  // Keep updating the list if more punctionation is encountered
+  // https://stackoverflow.com/questions/4328500/how-can-i-strip-all-punctuation-from-a-string-in-javascript-using-regex
+  function strip(str) {
+    var punctRE = /[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~]/g;
+    var spaceRE = /\s+/g;
+    var string =  str.replace(punctRE, '');
+    string = string.replace(spaceRE,'');
+    return string;
+  }
+
+  // Helper function to get the ID as an object
+  // If nothing is found, -1 is returned
+  function getIdOrder(target,array) {
+    for (i=0; i<array.length; i++){
+      if (typeLeft=="author"){
+        var id = array[i].idAuthor;
+        if (id == target) {
+          return array[i];
+        }
+      } else {
+        var id = array[i].id;
+        if (id == target) {
+          return array[i];
+        }
+      }
+    }
+    return -1;
+  }
+
+  // Helper function to get the target as an object
+  // If nothing is found, -1 is returned
+  function getTargetOrder(target,array) {
+    for (i=0; i<array.length; i++){
+      var id = array[i].id;
+      if (id == target) {
+        return array[i];
+      }
+    }
+    return -1;
+  }
+
+
+  //function to create an array of objects
+  //only within the specified years
+  function splitData(startYear,endYear,dataArray){
+    dateDividedArray = [];
+    for (var i=0;i<dataArray.length;i++){
+      var datum = dataArray[i];
+      var bookDate = datum.idDate;
+      if (bookDate>=startYear && bookDate <=endYear){
+        dateDividedArray.push(datum);
+      }
+    }
+    return dateDividedArray;
+  }
+
+  //move to front function, often used for nodes and lines. Copied directly from link below.
+  // https://stackoverflow.com/questions/14167863/how-can-i-bring-a-circle-to-the-front-with-d3
+  d3.selection.prototype.moveToFront = function() {
+    return this.each(function(){
+      this.parentNode.appendChild(this);
+    });
+  };
+
+  // https://stackoverflow.com/questions/14167863/how-can-i-bring-a-circle-to-the-front-with-d3
+  d3.selection.prototype.moveToBack = function() {
+    return this.each(function() {
+      var firstChild = this.parentNode.firstChild;
+      if (firstChild) {
+          this.parentNode.insertBefore(this, firstChild);
+      }
+    });
+  };
+
+  // function describes behavior on click for BOTH left and right
+  function clickLeftRight(d, i, removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray, highlightColorClick, highlightColorHover, allowedSide, notAllowedSide) {
+    var theId = d3.selectAll('circle[id='+getId(d)+']');
+    counterArray.push(theId);
+    var modded = getModNumberElem(theId,counterArray);
+    //target
+    if (d.side=="left" && allowedLeft==true){
+      var temp = d3.selectAll('line[id='+getId(d)+']').data();
+    } else {
+      var temp = d3.selectAll('line[data-target='+getId(d)+']').data();
+    }
+    if (modded!=0){
+      for (var j=0;j<temp.length;j++){
+        removableArray.push(temp[j]);
+      }
+      for (var i=0;i<hoverListSelectionsLine.length;i++){
+        hoverListSelectionsLine[i].style("fill", highlightColorClick).style("stroke", highlightColorClick).style("stroke-width", thickLineWidth);
+      }
+      // NODE
+      for (var i=0;i<hoverListSelectionsNode.length;i++){
+        hoverListSelectionsNode[i].style("fill", highlightColorClick).style("stroke", highlightColorClick).style("stroke-width", thickNodeWidth);
+      }
+      // TEXT
+      for (var i=0;i<hoverListSelectionsText.length;i++){
+        hoverListSelectionsText[i].style("fill", highlightColorClick).style("stroke", highlightColorClick);
+      }
+      for (var i=0;i<hoverListSelectionsText2.length;i++){
+        hoverListSelectionsText2[i].attr("class", "selected").style("cursor","default");
+      }
+
+    } else {
+      // deselect
+      for (var j=0;j<temp.length;j++){
+        remove(temp[j],removableArray);
+      }
+      hoverListSelectionsLine.length = 0;
+      hoverListSelectionsNode.length = 0;
+      hoverListSelectionsText.length = 0;
+      hoverListSelectionsText2.length = 0;
+
+    }
+    mouseover(d,i,removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);
+  }
+
+  //function describes behavior on click by setting variables that make left and right work properly,
+  //then calls the general click function (above)
+  function click(d, i, removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray) {
+    // if nothing is highlighted, both sides can be selected
+      //temporarally declare that both sides can be clicked on
+      //check if anything is highlighted
+    if (removableArray.length>0){
+      var setNull = false;
+    } else {
+      //if nothing is highlighted, allow both sides to be clicked on
+      setNull = true;
+      allowedLeft = true;
+      allowedRight = true;
+    }
+    if (d.side=="left" && allowedLeft==true){
+      allowedSide = "left";
+      var notAllowedSide = "right";
+      allowedRight = false;
+      setNull = false;
+      var highlightColorClick = highlightColorLeftClick;
+      var highlightColorHover = highlightColorLeftHover;
+      clickLeftRight(d, i, removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray, highlightColorClick, highlightColorHover, allowedSide, notAllowedSide);
+    } else if (d.side=="right" && allowedRight==true){
+      allowedSide = "right";
+      var notAllowedSide = "left";
+      allowedLeft = false;
+      setNull = false;
+      var highlightColorClick = highlightColorRightClick;
+      var highlightColorHover = highlightColorRightHover;
+      clickLeftRight(d, i, removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray, highlightColorClick, highlightColorHover, allowedSide, notAllowedSide);
+    }
+  }
+
+  //on mouseover, generally highlight
+  function mouseover(d,i,removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2) {
+    //temporarally declare that both sides can be clicked on
+    //check if anything is highlighted
+    if (removableArray.length>0){
+      setNull = false;
+    } else {
+      setNull = true;
+      allowedLeft = true;
+      allowedRight = true;
+    }
+    //LEFT
+    if (d.side=="left" && allowedLeft==true && setNull==false){
+      var allRight = d3.selectAll(".right").attr("class","otherSide");
+    }
+    else if (d.side=="right" && allowedRight==true && setNull==false){
+      var allLeft = d3.selectAll(".left").attr("class","otherSide");
+    }
+    else if (d.side=="left" && allowedLeft==true && setNull==true){
+      var allRight = d3.selectAll(".otherSide").attr("class","right");
+    }
+    else if (d.side=="right" && allowedRight==true && setNull==true){
+      var allLeft = d3.selectAll(".otherSide").attr("class","left");
+    }
+
+    //temporarally set dInside to false
+    var dInside=false;
+    if (d.side=="left" && allowedLeft==true){
+      var insideCheck = d3.selectAll('line[id='+getId(d)+']').data();
+    } else if (d.side=="right" && allowedRight==true){
+      var insideCheck = d3.selectAll('line[data-target='+getId(d)+']').data();
+    }
+    for (i=0;i<removableArray.length;i++){
+      for (var j=0;j<insideCheck.length;j++){
+        if (removableArray[i] == insideCheck[j]){
+          dInside=true;
+        }
+      }
+    }
+    // LEFT
+    if (d.side=="left" && allowedLeft==true){
+      var temp = d3.selectAll('line[id='+getId(d)+']').data();
+      for (var i=0;i<temp.length;i++){
+        var thisLine = d3.selectAll('line[id='+getId(d)+'],line[data-target='+getId(d)+']').style("stroke-width", thickLineWidth);
+        var thisNode = d3.selectAll('circle[id='+getId(d)+'],circle[id='+d.target+'],circle[data-target='+getId(d)+'],circle[id='+temp[i].target+']');
+        var thisNode2 = d3.selectAll('circle[data-target='+getId(d)+'],circle[id='+temp[i].target+']');
+        var thisText = d3.selectAll('text[id='+getId(d)+'],text[data-target='+getId(d)+'],text[id='+temp[i].target+']');
+        var thisText2 = d3.selectAll('text[data-target='+getId(d)+'],text[id='+temp[i].target+']');
+        hoverListSelectionsLine.push(thisLine);
+        hoverListSelectionsNode.push(thisNode);
+        hoverListSelectionsText.push(thisText);
+        hoverListSelectionsText2.push(thisText2);
+        // if not clicked on
+        if (dInside==false){
+          //highlight text
+          thisLine.style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover);
+          thisNode.style("stroke-width", thickNodeWidth).style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover).style("cursor","pointer");
+          thisText.style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover).style("cursor","pointer");
+          thisNode2.attr("class","selected").style("cursor","default");
+          thisText2.attr("class","selected").style("cursor","default");
+          thisLine.moveToFront();
+          thisNode.moveToFront();
+        }
+      }
+    //RIGHT
+    } else if (d.side=="right" && allowedRight==true){
+      // if not clicked on
+      var temp = d3.selectAll('line[data-target='+getId(d)+']').data();
+      for (var i=0;i<temp.length;i++){
+        var thisLine = d3.selectAll('line[id='+getId(d)+'],line[data-target='+getId(d)+'],line[data-target='+getId(d)+']').style("stroke-width", thickLineWidth);
+        if (typeLeft=="title"){
+          var thisNode = d3.selectAll('circle[id='+getId(d)+'],circle[id='+d.target+'],circle[data-idTitle='+temp[i].id+'],circle[data-target='+getId(d)+'],circle[id='+temp[i].id+']');
+          var thisNode2 = d3.selectAll('circle[data-target='+getId(d)+'],circle[data-idTitle='+temp[i].id+']');
+          var thisText = d3.selectAll('text[id='+getId(d)+'],text[data-target='+getId(d)+'],text[data-idTitle='+temp[i].id+']');
+          var thisText2 = d3.selectAll('text[data-target='+getId(d)+'],text[data-idTitle='+temp[i].id+']');
+        } else {
+          var thisNode = d3.selectAll('circle[id='+getId(d)+'],circle[data-idAuthor='+temp[i].idAuthor+'],circle[id='+d.target+'],circle[data-idTitle='+temp[i].id+'],circle[data-target='+getId(d)+'],circle[id='+temp[i].id+']')
+          var thisNode2 = d3.selectAll('circle[data-idAuthor='+temp[i].idAuthor+'],circle[data-target='+getId(d)+'],circle[data-idTitle='+temp[i].id+']');
+          var thisText = d3.selectAll('text[id='+getId(d)+'],text[data-idAuthor='+temp[i].idAuthor+'],text[data-target='+getId(d)+'],text[data-idTitle='+temp[i].id+']')
+          var thisText2 = d3.selectAll('text[data-idAuthor='+temp[i].idAuthor+'],text[data-target='+getId(d)+'],text[data-idTitle='+temp[i].id+']');
+        }
+        hoverListSelectionsLine.push(thisLine);
+        hoverListSelectionsNode.push(thisNode);
+        hoverListSelectionsText.push(thisText);
+        hoverListSelectionsText2.push(thisText2);
+        // if not clicked on
+        if (dInside==false){
+          //highlight text
+          thisLine.style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover);
+          thisNode.style("stroke-width", thickNodeWidth).style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover).style("cursor","pointer");
+          thisText.style("fill", highlightColorLeftHover).style("stroke", highlightColorLeftHover).style("cursor","pointer");
+          thisText2.attr("class","selected").style("cursor","default");
+          thisNode2.attr("class","selected").style("cursor","default");
+          thisLine.moveToFront();
+          thisNode.moveToFront();
+        }
+      }
+    }
+  }
+
+  // unhighlight on mouse moving out of shape
+  function mouseout(d,i,removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2){
+    // Check if nothing is clicked on, and setNull appropriately
+    if (removableArray.length>0){
+      setNull = false;
+    } else {
+      setNull = true;
+    }
+    //LEFT
+    if (d.side=="left" && allowedLeft==true){
+      var dInside=false;
+      var targetInside=false;
+      var insideCheck = d3.selectAll('line[id='+getId(d)+']').data();
+      var targetCheck = [];
+      for (var i=0;i<insideCheck.length;i++){
+        var theLines = d3.selectAll('line[data-target='+insideCheck[i].target+']').data();
+        for (var j=0;j<theLines.length;j++){
+          targetCheck.push(theLines[j]);
+        }
+      }
+      for (i=0;i<removableArray.length;i++){
+        for (var j=0;j<insideCheck.length;j++){
+          if (removableArray[i] == insideCheck[j]){
+            dInside=true;
+          }
+        }
+        for (var k=0;k<targetCheck.length;k++){
+          if (removableArray[i] == targetCheck[k]){
+            targetInside=true;
+            var target = removableArray[i];
+          }
+        }
+      }
+      // if not clicked on
+      if (dInside==false){
+        //if the data-target is not inside
+        // NODE
+        for (var i=0;i<hoverListSelectionsNode.length;i++){
+          hoverListSelectionsNode[i].style("fill", regNodeColor).style("stroke", regColor).style("stroke-width", regNodeWidth).style("cursor","default");
+        }
+        // LINE
+        for (var i=0;i<hoverListSelectionsLine.length;i++){
+          hoverListSelectionsLine[i].style("fill", regLineColor).style("stroke", regLineColor).style("stroke-width", regLineWidth);
+          hoverListSelectionsLine[i].moveToBack();
+        }
+        // TEXT
+        for (var i=0;i<hoverListSelectionsText.length;i++){
+          hoverListSelectionsText[i].style("fill", regColor).style("stroke", regColor).style("cursor","default");
+        }
+        if (targetInside==false){
+          for (var i=0;i<hoverListSelectionsText2.length;i++){
+            if (removableArray.length==0){
+              hoverListSelectionsText2[i].attr("class","right");
+            } else {
+              hoverListSelectionsText2[i].attr("class","otherSide");
+            }
+          }
+        } else {
+          var insideNode = d3.selectAll('circle[id='+target.target+']').style("fill",highlightColorLeftClick).style("stroke",highlightColorLeftClick);
+          var insideText = d3.selectAll('text[id='+target.target+']').style("fill",highlightColorLeftClick).style("stroke",highlightColorLeftClick);
+          insideNode.style("stroke-width", thickNodeWidth);
+        }
+      }
+      hoverListSelectionsLine.length = 0;
+      hoverListSelectionsNode.length = 0;
+      hoverListSelectionsText.length = 0;
+      hoverListSelectionsText2.length = 0;
+
+      //RIGHT
+    } else if (d.side=="right" && allowedRight==true){
+      var dInside=false;
+      var targetInside=false;
+      var insideCheck = d3.selectAll('line[data-target='+getId(d)+']').data();
+      var targetCheck = [];
+      for (var i=0;i<insideCheck.length;i++){
+        targetCheck.push(d3.selectAll('line[data-idTitle='+insideCheck[i].id+']').datum());
+      }
+      for (i=0;i<removableArray.length;i++){
+        for (var j=0;j<insideCheck.length;j++){
+          if (removableArray[i] == insideCheck[j]){
+            dInside=true;
+          }
+        }
+        for (var k=0;k<targetCheck.length;k++){
+          if (removableArray[i] == targetCheck[k]){
+            targetInside=true;
+            var target = removableArray[i];
+          }
+        }
+      }
+      // if not clicked on
+      if (dInside==false){
+        //deselect
+        // NODE
+        for (var i=0;i<hoverListSelectionsNode.length;i++){
+          hoverListSelectionsNode[i].style("fill", regNodeColor).style("stroke", regColor).style("stroke-width", regNodeWidth).style("cursor","default");
+        }
+        // LINE
+        for (var i=0;i<hoverListSelectionsLine.length;i++){
+          hoverListSelectionsLine[i].style("fill", regLineColor).style("stroke", regLineColor).style("stroke-width", regLineWidth);
+          hoverListSelectionsLine[i].moveToBack();
+        }
+        // TEXT
+        for (var i=0;i<hoverListSelectionsText.length;i++){
+          hoverListSelectionsText[i].style("fill", regColor).style("stroke", regColor).style("cursor","default");
+        }
+        if (targetInside==false){
+          for (var i=0;i<hoverListSelectionsText2.length;i++){
+            if (removableArray.length==0){
+              hoverListSelectionsText2[i].attr("class","left");
+            } else {
+              hoverListSelectionsText2[i].attr("class","otherSide");
+            }
+          }
+        } else {
+          var insideNode = d3.selectAll('circle[data-idTitle='+target.idTitle+']').style("fill",highlightColorRightClick).style("stroke",highlightColorRightClick);
+          var insideText = d3.selectAll('text[data-idTitle='+target.idTitle+']').style("fill",highlightColorRightClick).style("stroke",highlightColorRightClick);
+          insideNode.style("stroke-width", thickNodeWidth);
+        }
+      }
+      hoverListSelectionsLine.length = 0;
+      hoverListSelectionsNode.length = 0;
+      hoverListSelectionsText.length = 0;
+      hoverListSelectionsText2.length = 0;
+    }
+  }
+
+  // return id based on whether title view or author view is present
+  function getId(d){
+    if (typeLeft=="title"){
+        return d.id;
+    } else {
+      if (d.side=="left"){
+        return d.idAuthor;
+      } else {
+        return d.id;
+      }
+    }
+  }
+
+  //return idMulti based on whether title view or author view is present
+  function getIdMulti(d){
+    if (typeLeft=="title"){
+      return d.idMulti;
+    } else{
+      if (d.side=="left"){
+        return d.idAuthorMulti;
+      } else {
+        return d.idMulti;
+      }
+    }
+  }
+
+  // read in tsv. Data will only be left side's data initially
+  d3.tsv("parsedData.tsv", function(d) {
+    return {
+      // id with spaces
+      idMulti: d.id,
+      // id without spaces
+      id : strip(d.id),
+      idAuthor : strip(d.idAuthor),
+      idAuthorMulti : d.idAuthor,
+
+      idTitle : strip(d.id),
+      // target without spaces
+      target : strip(d.target),
+      targetMulti : d.target,
+      idDate : +d.idDate,
+      targetDate : +d.targetDate,
+      //side is left because right side
+      //data hasn't been created yet
+      side : "left",
+    };
+  },
+  function(data) {
+    var originalData = data;
+    //booleans tell which side can be clicked on
+    var allowedLeft = null;
+    var allowedRight = null;
+    // array containing only the highlighted/selected elements
+    // tracks the y positions of all of the text
+
+    draw(originalData);
+    function draw(data){
+      var removableArray = [];
+      hoverListSelectionsLine = [];
+      hoverListSelectionsNode = [];
+      hoverListSelectionsText = [];
+      hoverListSelectionsText2 = [];
+      nodeTextListLeft.length = 0;
+      nodeTextListRight.length = 0;
+      var counter = 0;
+      var yPositions = 0;
+
+      // make svg's height match height of animation
+      if (maxString == "0px"){
+        var svgHeight = "11000px";
+      } else {
+        svgHeight = maxNum;
+      }
+
+      var svg = d3.select("div")
+      .append("svg")
+      .attr("height",svgHeight)
+      .attr("width","100%")
+      .attr("class","innerSVG");
+
+      // split the data until it only contains from min to max date
+      data1 = splitData(minDate,maxDate,data);
+      data = [];
+
+      // general note: 5000 is used as the integer equvalent to null
+
+
+      // The following section filters the data to include as much as possible
+      // for the situation. For example, when a date isn't present but the user wants
+      // to sort by date, remove that data elements
+
+
+      // LEFT only
+      if (typeLeft == "author"){ //author view
+        for (var i=0;i<data1.length;i++){
+          if (sortLeft != "date"){ //alphabetized
+            if (data1[i].idAuthor!="null"){
+              if (sortRight == "date"){
+                if (data1[i].targetDate != "5000"){
+                  data.push(data1[i]);
+                }
+              } else {
+                data.push(data1[i]);
+              }
+            }
+          } else { // sort by date
+            if (data1[i].idAuthor!="null"){
+              if (sortRight == "date"){
+                if (data1[i].targetDate!="5000"){
+                  data.push(data1[i]);
+                }
+              } else {
+                data.push(data1[i]);
+              }
+            }
+          }
+        }
+      } else { //title view
+        for (var i=0;i<data1.length;i++){
+          if (sortLeft != "date"){ //alphabetized
+            if (sortRight == "date"){
+              if (data1[i].targetDate != "5000"){
+                data.push(data1[i]);
+              }
+            } else {
+              data.push(data1[i]);
+            }
+          } else { // sorted by date
+            if (data1[i].idDate!=5000){
+              if (sortRight == "date"){
+                if (data1[i].targetDate!="5000"){
+                  data.push(data1[i]);
+                }
+              } else {
+                data.push(data1[i]);
+              }
+            }
+          }
+        }
+      }
+      // separate the data into two sections:
+      // left-side data and right-side data
+      // set left-side data to the existing data
+      dataSubsetLeft = data;
+      // and create right-side data below
+      dataSubsetRight = [];
+      for (i=0;i<data.length;i++){
+        if (sortRight=="date"){
+          if ((data[i].targetDate)!= 5000){
+            dataSubsetRight.push({
+              idMulti : data[i].targetMulti,
+              id : data[i].target,
+              idDate : data[i].targetDate,
+              target : data[i].id,
+              targetMulti : data[i].idMulti,
+              targetDate : data[i].idDate,
+              side : "right",
+            });
+          }
+        } else {
+          dataSubsetRight.push({
+            idMulti : data[i].targetMulti,
+            id : data[i].target,
+            idDate : data[i].targetDate,
+            target : data[i].id,
+            targetMulti : data[i].idMulti,
+            targetDate : data[i].idDate,
+            side : "right",
+          });
+        }
+      }
+      // sort the sides by variable sortLeft (alphabetize or date)
+      dataSubsetLeft.sort(function (a,b) {
+        if (sortLeft=="date") {
+          return d3.ascending(a.idDate, b.idDate);
+        } else if (sortLeft=="alphabetize"){
+          if (typeLeft=="title"){
+            return d3.ascending(a.id, b.id);
+          } else {
+            return d3.ascending(a.idAuthor, b.idAuthor);
+          }
+        } else {
+          console.log("incorrect sorting name (left)")
+        }
+      });
+
+      // sort the sides by variable sortRight (alphabetize or date)
+      dataSubsetRight.sort(function (a,b) {
+        if (sortRight=="date") {
+          return d3.ascending(a.idDate, b.idDate);
+        } else if (sortRight=="alphabetize"){
+          return d3.ascending(a.id, b.id);
+        } else {
+          console.log("incorrect sorting name (right)")
+        }
+      });
+
+      //make a copy of the left/right data and remove duplicates
+      //Duplicates will be kept in dataSubsetLeft/Right
+      var copyLeft = dataSubsetLeft.slice(0);
+      var idStorageLeft = [];
+      for (i=0;i<copyLeft.length;i++){
+        if (typeLeft=="title"){
+          if (idStorageLeft.includes(copyLeft[i].id) == false){
+            nodeTextListLeft.push(copyLeft[i]);
+            idStorageLeft.push(copyLeft[i].id);
+          }
+        } else {
+          if (idStorageLeft.includes(copyLeft[i].idAuthor) == false){
+            nodeTextListLeft.push(copyLeft[i]);
+            idStorageLeft.push(copyLeft[i].idAuthor);
+          }
+        }
+      }
+      var copyRight = dataSubsetRight.slice(0);
+      var idStorageRight = [];
+      for (i=0;i<copyRight.length;i++){
+        if (idStorageRight.includes(copyRight[i].id) == false){
+          nodeTextListRight.push(copyRight[i]);
+          idStorageRight.push(copyRight[i].id)
+        }
+      }
+
+
+      //left and right duplicate-less data combined
+      var dataNodeText = [];
+      for (i=0;i<nodeTextListLeft.length;i++) {
+        dataNodeText.push(nodeTextListLeft[i]);
+      }
+      for (i=0;i<nodeTextListRight.length;i++) {
+        dataNodeText.push(nodeTextListRight[i]);
+      }
+
+      //left and right duplicate-full data combined
+      data = [];
+      for (i=0;i<dataSubsetLeft.length;i++) {
+        data.push(dataSubsetLeft[i]);
+      }
+      for (i=0;i<dataSubsetRight.length;i++) {
+        data.push(dataSubsetRight[i]);
+      }
+
+      //do not allow highlighting/selecting with mouse drag
+      d3.selectAll("div")
+        .style("-moz-user-select","none")
+        .style("user-select","none")
+        .style("-webkit-user-select","none");
+
+      //array of all things selected and deselected
+      var counterArray = [];
+
+      //temporarally declare that both sides can be clicked on
+      //check if anything is highlighted
+      if (removableArray.length>0){
+        setNull = false;
+      } else {
+        setNull = true;
+        allowedLeft = true;
+        allowedRight = true;
+      }
+
+      // create the title text, which displays the date
+      var titleText = svg.append("text")
+          .attr("class","titleText")
+          .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
+          .attr("y", function() {return topAlign - (betweenSpaceY*3);})
+          .text( function () {return (Math.round(minDate).toString()+"-"+Math.round(maxDate).toString()) })
+          .attr("text-anchor", function() {return "middle";})
+          .attr("font-family", font)
+          .attr("font-size", fontSizeTitle)
+          .attr("fill", regColor)
+          .attr("stroke", regColor);
+
+      // create the line under the title text
+      var titleLine = svg.append("line")
+          .attr("x1", function() {return (leftAlign+(betweenSpaceX/4));})
+          .attr("y1", function() {return topAlign - (betweenSpaceY*2.7);})
+          .attr("x2", function() {return (leftAlign+betweenSpaceX-(betweenSpaceX/4));})
+          .attr("y2", function() {return topAlign - (betweenSpaceY*2.7);})
+          .attr("fill", regColor)
+          .attr("stroke", regColor)
+          .attr("stroke-width", thickLineWidth);
+
+      // create text saying "map titles to epigraph authors"
+      var titlesSel = svg.append("text")
+          .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
+          .attr("y", function() {return topAlign - (betweenSpaceY*1.7);})
+          .attr("class",variableHeadingTitles)
+          .text("Map titles to epigraph authors")
+          .attr("text-anchor", function() {return "middle";})
+          .attr("font-family", "Crimson Text")
+          .attr("font-size", fontSize)
+          .attr("fill", regColor)
+          .attr("stroke", regColor)
+          .on("click",function(){
+            if (variableHeadingTitles=="deselectedHeading"){
+              // change classes around for css hover functionality
+              current = titlesSel;
+              previous = authorsSel;
+              current.attr("class","selectedHeading");
+              previous.attr("class","deselectedHeading");
+              variableHeadingTitles = "selectedHeading";
+              variableHeadingAuthors = "deselectedHeading";
+              // set global variable
+              typeLeft = "title";
+              // remove svg and redraw everything
+              d3.select("svg").remove();
+              draw(originalData);
+            }
+          });
+
+      // create text saying "map authors to epigraph authors"
+      var authorsSel = svg.append("text")
+          .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
+          .attr("y", function() {return topAlign - (betweenSpaceY);})
+          .attr("class", variableHeadingAuthors)
+          .text("Map authors to epigraph authors")
+          .attr("text-anchor", function() {return "middle";})
+          .attr("font-family", "Crimson Text")
+          .attr("font-size", fontSize)
+          .style("font-weight", "100")
+          .attr("fill", regColor)
+          .attr("stroke", regColor)
+          .on("click",function(){
+            if (variableHeadingAuthors=="deselectedHeading"){
+              // change classes around for css hover functionality
+              current = authorsSel;
+              previous = titlesSel;
+              current.attr("class","selectedHeading");
+              previous.attr("class","deselectedHeading");
+              variableHeadingAuthors = "selectedHeading";
+              variableHeadingTitles = "deselectedHeading";
+              // set global variable
+              typeLeft = "author";
+              // remove svg and redraw everything
+              d3.select("svg").remove();
+              draw(originalData);
+            }
+          });
+
+      // create sorter for left side
+      var topLeftText = svg.append("text")
+          .attr("class","topLeftText")
+          .attr("x", function() {
+            return leftAlign-3;
+          })
+          .attr("y", function() {
+            var total = Number(topAlign) - Number(betweenSpaceY)/3;
+            return total;
+          })
+          .text( function () {
+            if (sortLeft == "alphabetize"){
+              return "A-Z";
+            } else if (sortLeft == "date"){
+              return "DATE";
+            }
+          })
+          .attr("text-anchor", function() {return "middle";})
+          .attr("font-family", font)
+          .attr("font-size", fontSizeSorters.toString()+"px")
+          .attr('fill', regColor)
+          .attr("stroke", regColor)
+          .on("click", function() {
+            // change sorting global variables
+            if (sortLeft == "alphabetize"){
+              sortLeft = "date";
+            } else if (sortLeft == "date"){
+              sortLeft = "alphabetize";
+            }
+            // remove svg and redraw everything
+            d3.select("svg").remove();
+            draw(originalData);
+          });
+
+      // create sorter for right side
+      var topRightText = svg.append("text")
+          .attr("class","topRightText")
+          .attr("x", function() {
+            return leftAlign + betweenSpaceX - 3;
+          })
+          .attr("y", function() {
+            var total = Number(topAlign) - Number(betweenSpaceY)/3;
+            return total;
+          })
+          .text( function () {
+            if (sortRight == "alphabetize"){
+              return "A-Z";
+            } else if (sortRight == "date"){
+              return "DATE";
+            }
+          })
+          .attr("text-anchor", function() {return "middle";})
+          .attr("font-family", font)
+          .attr("font-size", fontSizeSorters.toString()+"px")
+          .attr('fill', regColor)
+          .attr("stroke", regColor)
+          .on("click", function() {
+            // change sorting global variables
+            if (sortRight == "alphabetize"){
+              sortRight = "date";
+            } else if (sortRight == "date"){
+              sortRight = "alphabetize";
+            }
+            // remove svg and redraw everything
+            d3.select("svg").remove();
+            draw(originalData);
+          });
+
+    // create static arrow for left side
+    var arrowLeft = svg.append("text")
+        .attr("x", function() {
+          if (sortLeft == "alphabetize"){
+            return leftAlign+15;
+          } else if (sortLeft == "date"){
+            return leftAlign+22;
+          }
+        })
+        .attr("y", function() {
+          var total = Number(topAlign) - Number(betweenSpaceY)/3 - 2;
+          return total;
+        })
+        .text("↓")
+        .attr("text-anchor", function() {return "middle";})
+        .attr("font-family", font)
+        .attr("font-size", (fontSizeSorters-2).toString()+"px")
+        .attr("fill", regColor)
+        .attr("stroke", regColor)
+
+    // create static arrow for left side
+    var arrowRight = svg.append("text")
+        .attr("x", function() {
+          if (sortRight == "alphabetize"){
+            return leftAlign + betweenSpaceX + 15;
+          } else if (sortRight == "date"){
+            return leftAlign + betweenSpaceX + 22;
+          }
+        })
+        .attr("y", function() {
+          var total = Number(topAlign) - Number(betweenSpaceY)/3 - 2;
+          return total;
+        })
+        .text("↓")
+        .attr("text-anchor", function() {return "middle";})
+        .attr("font-family", font)
+        .attr("font-size", (fontSizeSorters-2).toString()+"px")
+        .attr("fill", regColor)
+        .attr("stroke", regColor)
+
+      // create connecting lines
+      var connectLine = svg.selectAll("connectLine")
+          .data(dataSubsetLeft)
+          .enter().append("line")
+          .attr("class", "line")
+          .attr("id", function (d) {return getId(d);})
+          .attr("data-target", function (d) {return d.target;})
+          .attr("data-idTitle", function(d) {return d.idTitle;})
+          .attr("x1", function(d) {return leftAlign;})
+          .attr("y1", function(d) {
+            // HERE HERE HERE
+            if (typeLeft=="title"){
+              var type = d.id;
+            } else {
+              var type = d.idAuthor;
+            }
+            var obj = getIdOrder(type,dataNodeText);
+            var index = dataNodeText.indexOf(obj);
+            var total = topAlign + (index*betweenSpaceY);
+            return total;
+          })
+          .attr("x2", function(d) {return leftAlign + betweenSpaceX;})
+          .attr("y2", function(d) {
+            var obj = getTargetOrder(d.target,dataNodeText);
+            var index = dataNodeText.indexOf(obj)-nodeTextListLeft.length;
+            var total = topAlign + (index*betweenSpaceY);
+            return total;
+          })
+          .style("stroke-width", regLineWidth)
+          .style("stroke", regLineColor);
+
+
+      // create the circles next to the words on the left
+      var nodeLeft = svg.selectAll("nodeLeft")
+          .data(nodeTextListLeft)
+          .enter().append("circle")
+          .attr("class", "node")
+          .attr("r", nodeSize)
+          .attr("data-idTitle", function(d) {return d.idTitle;})
+          .attr("data-idAuthor", function(d) {return d.idAuthor;})
+          .attr("id", function (d) {return getId(d);})
+          .attr("data-side", function (d) {return d.side;})
+          .attr("data-target", function (d) {return d.target;})
+          .attr("cx", function(d) {
+            return leftAlign;
+          })
+          .attr("cy", function(d) {
+            var index = dataNodeText.indexOf(d);
+            var total = Number(topAlign) + (Number(index)*Number(betweenSpaceY));
+            return total;
+          })
+          .style("fill", regNodeColor)
+          .style("stroke-width",regNodeWidth)
+          .style("stroke", regColor)
+          .on("click", function(d,i){click(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray);})
+          .on("mouseover", function(d,i){mouseover(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);})
+          .on("mouseout", function(d,i){mouseout(d,i,removableArray, hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2)});
+
+      // create the circles next to the words on the right
+      var nodeRight = svg.selectAll("nodeRight")
+          .data(nodeTextListRight)
+          .enter().append("circle")
+          .attr("class", "node")
+          .attr("r", nodeSize)
+          .attr("data-idTitle", function(d) {return d.idTitle;})
+          .attr("data-idAuthor", function(d) {return d.idAuthor;})
+          .attr("id", function (d) {return getId(d);})
+          .attr("data-side", function (d) {return d.side;})
+          .attr("data-target", function (d) {return d.target;})
+          .attr("cx", function(d) {
+            return leftAlign + betweenSpaceX;
+          })
+          .attr("cy", function(d) {
+            var index = dataNodeText.indexOf(d)-nodeTextListLeft.length;
+            var total = Number(topAlign) + (Number(index)*Number(betweenSpaceY));
+            return total;
+          })
+          .style("fill", regNodeColor)
+          .style("stroke-width",regNodeWidth)
+          .style("stroke", regColor)
+          .on("click", function(d,i){click(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray);})
+          .on("mouseover", function(d,i){mouseover(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);})
+          .on("mouseout", function(d,i){mouseout(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2)});
+
+        // create words on left
+        var textLeft = svg.selectAll("textLeft")
+          .data(nodeTextListLeft)
+          .enter().append("text")
+          .attr("id", function (d) {return getId(d);})
+          .attr("data-target", function (d) {return d.target;})
+          .attr("data-side", function (d) {return d.side;})
+          .attr("class", "left")
+          .attr("data-idAuthor", function(d) {return d.idAuthor;})
+          .attr("data-idTitle", function(d) {return d.idTitle;})
+          .attr("text-anchor", function(d) {return "end";})
+          .attr("x", function(d) {return (leftAlign - 40);})
+          .attr("y", function(d,i) {
+            var index = dataNodeText.indexOf(d);
+            var total = Number(topAlign) + (Number(index)*Number(betweenSpaceY))+5.5;
+            if (yPositions<total){
+              yPositions = total;
+            }
+            if (counter<=i){
+              counter = i;
+            }
+            return total;
+          })
+          //this is where idMulti is used;
+          //display text with spaces, but for everything else,
+          //use stripped names as Ids
+          .text( function (d) {return " " + getIdMulti(d) + " "; })
+          .attr("font-family", font)
+          .attr("font-size", fontSize)
+          .attr("fill", regColor)
+          .attr("stroke", regColor)
+          .on("click", function(d,i){click(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray);})
+          .on("mouseover", function(d,i){mouseover(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);})
+          .on("mouseout", function(d,i){mouseout(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);});
+
+        // create words on right
+        var textRight = svg.selectAll("textRight")
+          .data(nodeTextListRight)
+          .enter().append("text")
+          .attr("id", function (d) {return getId(d);})
+          .attr("class", "right")
+          .attr("data-target", function (d) {return d.target;})
+          .attr("data-side", function (d) {return d.side;})
+          .attr("data-idTitle", function(d) {return d.idTitle;})
+          .attr("data-idAuthor", function(d) {return d.idAuthor;})
+          .attr("text-anchor", function(d) {return "start";})
+          .attr("x", function(d) {
+            return (leftAlign+betweenSpaceX + 40);
+          })
+          .attr("y", function(d,i) {
+            var index = dataNodeText.indexOf(d)-nodeTextListLeft.length;
+            var total = Number(topAlign) + (Number(index)*Number(betweenSpaceY))+5.5;
+            if (yPositions<total){
+              yPositions = total;
+            }
+            if (counter<=i){
+              counter = i;
+            }
+            return total;
+          })
+          //this is where idMulti is used;
+          //display text with spaces, but for everything else,
+          //use stripped names as Ids
+          .text( function (d) {return " " + getIdMulti(d) + " "; })
+          .attr("font-family", font)
+          .attr("font-size", fontSize)
+          .attr("fill", regColor)
+          .attr("stroke", regColor)
+          .on("click", function(d,i){click(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2, counterArray);})
+          .on("mouseover", function(d,i){mouseover(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);})
+          .on("mouseout", function(d,i){mouseout(d,i,removableArray,hoverListSelectionsLine, hoverListSelectionsNode, hoverListSelectionsText, hoverListSelectionsText2);});
+
+
+      // get lowest y position. This sets height of slider
+      // as well as height of SVG
+      maxNum = (topAlign+(betweenSpaceY*(counter+1)));
+      maxString = maxNum.toString()+"px";
+      document.querySelector('.slider').style.top = maxString;
+      document.querySelector('.slider').style.left = (leftAlign+6).toString()+"px";
+      document.querySelector('.slider').style.width = (betweenSpaceX).toString()+"px";
+      svg.attr("height",(maxNum+betweenSpaceY).toString()+"px");
+    }
+    // create slider
+    var slider = document.getElementById('slider');
+    noUiSlider.create(slider, {
+      // initial selector position
+      start: [minDate, maxDate],
+    	connect: true,
+      // number between each date
+      step: 10,
+      // allows dragging and clicking on date
+      behaviour: 'tap',
+    	range: {
+    		'min': minDate,
+    		'max': maxDate
+    	},
+      // correlates to ticks
+      pips: {
+        mode: 'steps',
+        density: 20
+      }
+    });
+    slider.noUiSlider.on('set', function(){
+      // get slider position
+      var arrDates = [];
+      arrDates = slider.noUiSlider.get();
+      // set global variables
+      // minDate and maxDate to slider positions
+      minDate = (arrDates[0]);
+      maxDate = (arrDates[1]);
+      // remove SVG
+      d3.select("svg").remove();
+      // redraw everything, including SVG
+      draw(originalData);
+    });
+  });
+
+  </script>
+</body>

@@ -1,0 +1,19 @@
+{
+  "name": "end",
+  "version": "1.0.0",
+  "description": "end project",
+  "main": "d3.v4.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.swarthmore.edu/SPEED/end-epigraphs-visualization/tree/master/exercises_in_D3/Step%202"
+  },
+  "author": "Nicki Feldbaum",
+  "license": "ISC",
+  "dependencies": {
+    "nouislider": "^10.0.0"
+  },
+  "devDependencies": {}
+}
