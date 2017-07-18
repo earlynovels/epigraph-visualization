@@ -18,7 +18,6 @@ manualAdditionsDates = []
 manualSeparators = [',', ' of ', ' in ', ' a ', ' an ', '.', ' to ', ' In ']
 # Names of files to use
 titlesInputFile = 'datesComplete.tsv'
-#titlesInputFile = 'to_finish_later.tsv'
 titlesOutputFile = 'datesAndTitlesComplete.tsv'
 
 
@@ -387,7 +386,8 @@ def manualTitle(oldtitle, title, seps):
         print i, "Write your own. "
         print "If none of these numbers are chosen,",
         print "the original short title will be used. "
-        print "To stop checking manually, enter the letter n. "
+        print "To stop checking manually, and start automating, enter the letter n. "
+        print "To stop checking manually, and resume later, type end"
         answer = raw_input("Which title should be used? ")
         choice = answer.strip()
         if choice.isdigit():

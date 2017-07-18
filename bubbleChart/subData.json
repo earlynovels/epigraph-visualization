@@ -1,0 +1,133 @@
+ {
+  "name": "MostReferencedAuthorsIn18thCentury",
+  "children": [
+      {
+        "name": "Giffard",
+        "size": 3
+      },
+      {
+        "name": "Addison",
+        "size": 6
+      },
+      {
+        "name": "Anon",
+        "size": 3
+      },
+      {
+        "name": "Shakespeare",
+        "size": 42
+      },
+      {
+        "name": "Gray",
+        "size": 3
+      },
+      {
+        "name": "Watts",
+        "size": 3
+      },
+      {
+        "name": "Harrison",
+        "size": 6
+      },
+      {
+        "name": "Johnson",
+        "size": 3
+      },
+      {
+        "name": "Prior",
+        "size": 6
+      },
+      {
+        "name": "Taylor",
+        "size": 3
+      },
+      {
+        "name": "Gay",
+        "size": 4
+      },
+      {
+        "name": "Thomson",
+        "size": 5
+      },
+      {
+        "name": "Burton",
+        "size": 3
+      },
+      {
+        "name": "Cowper",
+        "size": 4
+      },
+      {
+        "name": "Cadell",
+        "size": 3
+      },
+      {
+        "name": "Voltaire",
+        "size": 5
+      },
+      {
+        "name": "Young",
+        "size": 7
+      },
+      {
+        "name": "Rousseau",
+        "size": 5
+      },
+      {
+        "name": "Dodsley",
+        "size": 6
+      },
+      {
+        "name": "Lane",
+        "size": 6
+      },
+      {
+        "name": "Ovid",
+        "size": 8
+      },
+      {
+        "name": "Horace",
+        "size": 39
+      },
+      {
+        "name": "Lucretius",
+        "size": 5
+      },
+      {
+        "name": "Pope",
+        "size": 25
+      },
+      {
+        "name": "Martial",
+        "size": 3
+      },
+      {
+        "name": "Virgil",
+        "size": 20
+      },
+      {
+        "name": "Juvenal",
+        "size": 8
+      },
+      {
+        "name": "Milton",
+        "size": 9
+      },
+      {
+        "name": "Otway",
+        "size": 3
+      },
+      {
+        "name": "Cicero",
+        "size": 6
+      },
+      {
+        "name": "Dill",
+        "size": 3
+      },
+      {
+        "name": "Scott",
+        "size": 3
+      }
+    ]
+  }
