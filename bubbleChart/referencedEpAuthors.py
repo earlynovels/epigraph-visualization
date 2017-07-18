@@ -1,4 +1,6 @@
 # -*- coding: UTF-8 -*-
+import json
+
 inputFile = open("parsedData.tsv","r")
 targetFile = open("epAuthorsNumSubset.csv","w")
 lineNum = 1
@@ -30,3 +32,5 @@ dictList = dictionary.items()
 for pair in dictList:
     if (pair[1]>2):
         targetFile.write(str(pair[0])+","+str(pair[1])+"\n")
+with open('epAuthorsNumSubset.json', 'w') as outfile:
+    json.dump(dictList, outfile)

@@ -10,10 +10,15 @@ text {
 <body>
   <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
+// set design variables
+var scheme = d3.schemeCategory20c;
+var file = "subData.json";
+var fontSize = "20px";
+
 
 var diameter = 960,
     format = d3.format(",d"),
-    color = d3.scaleOrdinal(d3.schemeCategory20c);
+    color = d3.scaleOrdinal(scheme);
 
 var bubble = d3.pack()
     .size([diameter, diameter])
@@ -24,7 +29,7 @@ var svg = d3.select("body").append("svg")
     .attr("height", diameter)
     .attr("class", "bubble");
 
-d3.json("subData.json", function(error, data) {
+d3.json(file, function(error, data) {
   if (error) throw error;
 
   var root = d3.hierarchy(classes(data))
@@ -49,7 +54,7 @@ d3.json("subData.json", function(error, data) {
 
   node.append("text")
       .attr("dy", ".3em")
-      .style("font-size","20px")
+      .style("font-size",fontSize)
       .style("text-anchor", "middle")
       .style("cursor","default")
       .text(function(d) { return d.data.className.substring(0, d.r/3); });
