@@ -37,13 +37,13 @@
   svg text.selectedHeading:hover {
     fill: RoyalBlue;
     stroke: RoyalBlue;
-    cursor: default;
+    cursor: pointer;
   }
 
   svg text.deselectedHeading:hover {
     fill: RoyalBlue;
     stroke: RoyalBlue;
-    cursor: default;
+    cursor: pointer;
   }
 
   svg rect.hidden {
@@ -56,7 +56,7 @@
   p {
     position: relative;
     font-weight: bold;
-    left: 400px;
+    left: 350px;
   }
   p1 {
     position: relative;
@@ -72,7 +72,7 @@
     <div id="slider"></div>
   </div>
   <div id="about">
-    <p>If you wish to define your own left-attaching diacritics/phones, type them below. Most diacritics are recognized by default. For a complete list, see the bottom <br /> of the page.</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud <br /> exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.<br /> Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
   </div>
 
   <script src="node_modules/nouislider/distribute/nouislider.min.js"></script>
@@ -94,7 +94,7 @@
   var regNodeColor = "grey";
   var regLineWidth = "1"
   var regNodeWidth = "1"
-  var thickLineWidth = "3"
+  var thickLineWidth = "2.5"
   // make this higher if you want the nodes to grow when selected/hovered over
   var thickNodeWidth = "1"
   var font = "Bellefair";
@@ -995,6 +995,7 @@
         .attr("font-size", (fontSizeSorters-2).toString()+"px")
         .attr("fill", regColor)
         .attr("stroke", regColor)
+        .style("cursor","default");
 
     // create static arrow for left side
     var arrowRight = svg.append("text")
@@ -1015,6 +1016,7 @@
         .attr("font-size", (fontSizeSorters-2).toString()+"px")
         .attr("fill", regColor)
         .attr("stroke", regColor)
+        .style("cursor","default");
 
       // create connecting lines
       var connectLine = svg.selectAll("connectLine")
