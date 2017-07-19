@@ -588,8 +588,9 @@
   }
 
   // read in tsv. Data will only be left side's data initially
-  d3.tsv("parsedData.tsv", function(d) {
+  d3.tsv("parsedData1.tsv", function(d) {
     return {
+      identification: d.ident,
       // id with spaces
       idMulti: d.id,
       // id without spaces
@@ -609,6 +610,7 @@
     };
   },
   function(data) {
+    console.log(data);
     var originalData = data;
     //booleans tell which side can be clicked on
     var allowedLeft = null;
@@ -1135,6 +1137,7 @@
           .data(nodeTextListLeft)
           .enter().append("text")
           .attr("id", function (d) {return getId(d);})
+          .attr("identification", function(d) { return d.identification;})
           .attr("data-target", function (d) {return d.target;})
           .attr("data-side", function (d) {return d.side;})
           .attr("class", "left")
