@@ -14,7 +14,10 @@
   body, #content {
     height: 100%;
     width: 100%;
+    font-family: Bellefair;
+    font-size: 16px;
   }
+
   svg text.otherSide {
     stroke: grey;
     cursor: default;
@@ -61,6 +64,9 @@
     position: relative;
     left: -4000px;
   }
+  /*div#visualization {
+    height: 100vh;
+  }*/
 
   </style>
 </head>
@@ -74,7 +80,7 @@
     <p>The Early Novels Database (END) "generates high-quality metadata about novels published between 1660 and 1850 in order to make early works of fiction more available <br />to both traditional and computational modes of humanistic study."
       This visualization utilizes a 1700-1790 subset of this  metadata to computationally explore connections<br /> between the early novel and any epigraphs within.
       The visualization’s design was inspired by the open-source HBO Recycling Program visualization.</p>
-  </div>
+    </div>
 
   <script src="node_modules/nouislider/distribute/nouislider.min.js"></script>
   <script src="https://d3js.org/d3.v4.min.js"></script>
@@ -83,15 +89,15 @@
   // MUST CHANGE CSS p to leftAlign-250
   // MINIMUM 450
   var leftAlign = 600;
-  var topAlign = 200;
+  var topAlign = 225;
   // MINIMUM 300
   var betweenSpaceX = 600;
   var betweenSpaceY = 45;
   var nodeSize = 6;
-  var highlightColorLeftClick = "navy";
-  var highlightColorRightClick = "navy";
-  var highlightColorLeftHover = "RoyalBlue";
-  var highlightColorRightHover = "RoyalBlue";
+  var highlightColorLeftClick = "red";
+  var highlightColorRightClick = "red";
+  var highlightColorLeftHover = "DarkRed";
+  var highlightColorRightHover = "DarkRed";
   var regColor = "black";
   var regLineColor = "rgb(70, 70, 70)";
   var regNodeColor = "grey";
@@ -729,26 +735,51 @@
         }
       }
       // sort the sides by variable sortLeft (alphabetize or date)
+      // aList and bList exist to moderate the influence of 'a', 'an', and 'the'
       dataSubsetLeft.sort(function (a,b) {
         if (sortLeft=="date") {
           return d3.ascending(a.idDate, b.idDate);
         } else if (sortLeft=="alphabetize"){
           if (typeLeft=="title"){
-            var checkThe = (a.idMulti.slice(0,4));
-            var checkA = (a.idMulti.slice(0,2));
-            var checkAn = (a.idMulti.slice(0,3));
-            if (checkThe === "The "){
-              return d3.ascending(a.id.slice(3).toLowerCase(), b.id.toLowerCase());
+            aList = [];
+            bList = [];
+            theA = (a.idMulti.slice(0,4)) === "The ";
+            if (theA){
+              aList.push(4);
             }
-            if (checkA === "A "){
-              return d3.ascending(a.id.slice(1).toLowerCase(), b.id.toLowerCase());
+            var aA = (a.idMulti.slice(0,2)) === "A ";
+            if (aA){
+              aList.push(2);
             }
-            if (checkAn === "An "){
-              return d3.ascending(a.id.slice(2).toLowerCase(), b.id.toLowerCase());
+            var anA = (a.idMulti.slice(0,3)) === "An ";
+            if (anA){
+              aList.push(3);
             }
-            return d3.ascending(a.id.toLowerCase(), b.id.toLowerCase());
+            theB = (b.idMulti.slice(0,4)) === "The ";
+            if (theB){
+              bList.push(4);
+            }
+            var aB = (b.idMulti.slice(0,2)) === "A ";
+            if (aB){
+              bList.push(2);
+            }
+            var anB = (b.idMulti.slice(0,3)) === "An ";
+            if (anB){
+              bList.push(3);
+            }
+            if (aList.length==1) {
+              if (bList.length==1) { //A and B
+                return d3.ascending(a.idMulti.slice(aList[0]).toLowerCase(), b.idMulti.toLowerCase().slice(bList[0]));
+              } else { //just A
+                return d3.ascending(a.idMulti.slice(aList[0]).toLowerCase(), b.idMulti.toLowerCase());
+              }
+            } else if (bList.length==1){ //just B
+              return d3.ascending(a.idMulti.toLowerCase(), b.idMulti.toLowerCase().slice(bList[0]));
+            } else { //neither
+              return d3.ascending(a.idMulti.toLowerCase(), b.idMulti.toLowerCase());
+            }
           } else {
-            return d3.ascending(a.idAuthor.toLowerCase(), b.idAuthor.toLowerCase());
+            return d3.ascending(a.idAuthorMulti.toLowerCase(), b.idAuthorMulti.toLowerCase());
           }
         } else {
           console.log("incorrect sorting name (left)")
@@ -834,56 +865,27 @@
       var titleText = svg.append("text")
           .attr("class","titleText")
           .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
-          .attr("y", function() {return topAlign - (betweenSpaceY*3);})
+          .attr("y", function() {return 35;})
           .text( function () {return (Math.round(minDate).toString()+"-"+Math.round(maxDate).toString()) })
           .attr("text-anchor", function() {return "middle";})
           .attr("font-family", font)
           .attr("font-size", fontSizeTitle)
           .attr("fill", regColor)
           .attr("stroke", regColor);
-
       // create the line under the title text
       var titleLine = svg.append("line")
           .attr("x1", function() {return (leftAlign+(betweenSpaceX/4));})
-          .attr("y1", function() {return topAlign - (betweenSpaceY*2.7);})
+          .attr("y1", function() {return 75;})
           .attr("x2", function() {return (leftAlign+betweenSpaceX-(betweenSpaceX/4));})
-          .attr("y2", function() {return topAlign - (betweenSpaceY*2.7);})
+          .attr("y2", function() {return 75;})
           .attr("fill", regColor)
           .attr("stroke", regColor)
           .attr("stroke-width", thickLineWidth);
 
-      // create text saying "map titles to epigraph authors"
-      // var titlesSel = svg.append("text")
-      //     .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
-      //     .attr("y", function() {return topAlign - (betweenSpaceY*1.7);})
-      //     .attr("class",variableHeadingTitles)
-      //     .text("Map titles to epigraph authors")
-      //     .attr("text-anchor", function() {return "middle";})
-      //     .attr("font-family", "Crimson Text")
-      //     .attr("font-size", fontSize)
-      //     .attr("fill", regColor)
-      //     .attr("stroke", regColor)
-      //     .on("click",function(){
-      //       if (variableHeadingTitles=="deselectedHeading"){
-      //         // change classes around for css hover functionality
-      //         current = titlesSel;
-      //         previous = authorsSel;
-      //         current.attr("class","selectedHeading");
-      //         previous.attr("class","deselectedHeading");
-      //         variableHeadingTitles = "selectedHeading";
-      //         variableHeadingAuthors = "deselectedHeading";
-      //         // set global variable
-      //         typeLeft = "title";
-      //         // remove svg and redraw everything
-      //         d3.select("svg").remove();
-      //         draw(originalData);
-      //       }
-      //     });
-
       // create text saying "map authors to epigraph authors"
       var authOrTitle = svg.append("text")
           .attr("x", function() {return (leftAlign+(betweenSpaceX/2));})
-          .attr("y", function() {return topAlign - (betweenSpaceY*1.7);})
+          .attr("y", function() {return 125;})
           .attr("class", function () {
             if (headingAuthors == true){
               return "selectedHeading";
