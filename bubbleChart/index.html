@@ -19,7 +19,7 @@ p {
   <p>18th Century Authors’ Favorite Books to Quote</p>
 <script>
 // set design variables
-var scheme = d3.schemeCategory20c;
+var scheme = d3.schemeCategory10;
 var file = "subData.json";
 var fontSize = "20px";
 
@@ -63,6 +63,9 @@ d3.json(file, function(error, data) {
   node.append("text")
       .attr("dy", ".3em")
       .style("font-size",fontSize)
+      .style("stroke","white")
+      .style("stroke-width","0.1")
+      .style("fill","white")
       .style("text-anchor", "middle")
       .style("cursor","default")
       .text(function(d) { return d.data.className.substring(0, d.r/3); });
