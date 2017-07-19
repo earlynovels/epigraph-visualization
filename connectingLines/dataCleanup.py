@@ -450,15 +450,15 @@ def writeSimpleFile():
     # build up source and target lists and write first line to file
     for line in finalFile:
         if (lineNum==1):
-            categories = "id\tidAuthor\ttarget\tidDate\ttargetDate\n"
+            categories = "ident\tid\tidAuthor\ttarget\tidDate\ttargetDate\n"
             targetFile.write(categories)
         else:
             lineList = line.strip("\n")
             lineList = lineList.strip("\r")
             lineList = lineList.split(tab)
             # set variables
-            ident=lineList[0].rstrip('.')
-            longTitle=lineList[1]
+            ident=lineList[0]
+            shortTitle=lineList[17].rstrip('.')
             author=lineList[2]
             author = author.decode('latin-1').encode('ascii',errors='ignore').rstrip('.')
 
@@ -468,7 +468,7 @@ def writeSimpleFile():
             epigraph=lineList[7]
             for character in ['[',']','\'','\"']:
                 epigraph = epigraph.replace(character,'')
-                longTitle = longTitle.replace(character,'')
+                shortTitle = shortTitle.replace(character,'')
                 author = author.replace(character,'')
             if ',' in author:
                 index = author.find(',')
@@ -477,11 +477,10 @@ def writeSimpleFile():
             epAuthorDate = lineList[16]
             if epAuthorDate == "null":
                 epAuthorDate = "5000"
-            shortTitle=lineList[17]
             if (author == ""):
                 author = "null"
             if (epAuthor!="" and epAuthor!="null" and any(c.isalpha() for c in epAuthor)):
-                targetFile.write(shortTitle+tab+author+tab+epAuthor+tab+pubDate+tab+epAuthorDate+"\n")
+                targetFile.write(ident+tab+shortTitle+tab+author+tab+epAuthor+tab+pubDate+tab+epAuthorDate+"\n")
         lineNum +=1
 # read in csv
 def main():
