@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: latin-1 -*-
 
 import requests
 import re
@@ -34,8 +34,8 @@ def searchDateRange(result, given):
         return -1
     else:
         if result not in manualAdditionsAuthors:
-            # manualResult = raw_input("What should this date be ("+result+"): ")
-            manualResult = ""
+            manualResult = raw_input("What should this date be ("+result.encode("latin-1")+"): ")
+            # manualResult = ""
             if (manualResult == ""):
                 manualResult = "null"
             else:
@@ -84,8 +84,8 @@ def viafParser(author):
             return date
         elif hasNumbers(result):
             if result not in manualAdditionsAuthors:
-                # manualResult = raw_input("What should this date be ("+result+"): ")
-                manualResult = ""
+                manualResult = raw_input("What should this date be ("+result+"): ")
+                # manualResult = ""
                 if (manualResult == ""):
                     manualResult = "null"
                 else:
@@ -158,7 +158,7 @@ def parseName(name):
 
 def parseFile():
     targetFile = open("datesComplete.tsv","w")
-    with io.open("initialCombined.tsv", "r", encoding="utf-8") as inputFile:
+    with io.open("initialCombined.tsv", "r", encoding="latin-1") as inputFile:
         # data = inputFile.read()
         lineNum = 1
         tab = "\t"
@@ -168,11 +168,11 @@ def parseFile():
             lineList = line.strip("\n").split(tab)
             # priority: epigraphAuthorCol (d1Col), cCol, twoCol
             for i in range(len(lineList)):
-                # word.decode("utf-8").replace(u'\u200f', u'').encode("utf-8")
-                if "\u200f" in lineList[i].encode('utf-8'):
+                # word.decode("latin-1").replace(u'\u200f', u'').encode("latin-1")
+                if "\u200f" in lineList[i].encode('latin-1'):
                     # word.replace("\u200f","")
-                    theIndex = (lineList[i].encode('utf-8')).index("\u200f")
-                    lineList[i] = (lineList[i].encode('utf-8'))[:theIndex]+"']"
+                    theIndex = (lineList[i].encode('latin-1')).index("\u200f")
+                    lineList[i] = (lineList[i].encode('latin-1'))[:theIndex]+"']"
 
             lineList[2] = parseName(lineList[2])
 
@@ -201,9 +201,9 @@ def parseFile():
             priorityDateArray = []
             allBlank = True
             if (lineNum==1):
-                targetFile.write(immutableElements.encode("utf-8")+tab+"new_ep_author_col"+tab+"new_ep_date_col"+"\n")
+                targetFile.write(immutableElements.encode("latin-1")+tab+"new_ep_author_col"+tab+"new_ep_date_col"+"\n")
             else:
-                targetFile.write(immutableElements.encode("utf-8")+tab)
+                targetFile.write(immutableElements.encode("latin-1")+tab)
                 allBlank = True
                 if epigraphAuthorCol != "":
                     allBlank = False
@@ -270,7 +270,7 @@ def parseFile():
                         pass
 
                 if (firstAuthor==True):
-                    targetFile.write("null".encode('utf-8')+tab+"null".encode('utf-8')+"\n")
+                    targetFile.write("null".encode('latin-1')+tab+"null".encode('latin-1')+"\n")
                 else:
                     if "BC" in correctDate:
                         index = correctDate.index("BC")
@@ -281,7 +281,7 @@ def parseFile():
                         index = correctDate.index("<br/>")
                         correctDate = correctDate[:index]
 
-                    targetFile.write(correctAuthor.encode('utf-8')+tab+correctDate.encode('utf-8')+"\n")
+                    targetFile.write(correctAuthor.encode('latin-1')+tab+correctDate.encode('latin-1')+"\n")
             lineNum+=1
             previous = lineList
 
@@ -457,27 +457,32 @@ def writeSimpleFile():
             lineList = lineList.strip("\r")
             lineList = lineList.split(tab)
             # set variables
-            ident=lineList[0]
+            ident=lineList[0].rstrip('.')
             longTitle=lineList[1]
             author=lineList[2]
-            author = author.decode('utf-8').encode('ascii',errors='ignore')
-            pubDate=lineList[3]
+            author = author.decode('latin-1').encode('ascii',errors='ignore').rstrip('.')
+
+            pubDate=lineList[3].rstrip('.')
             epAuthor = lineList[15]
-            epAuthor = epAuthor.decode('utf-8').encode('ascii',errors='ignore')
+            epAuthor = epAuthor.decode('latin-1').encode('ascii',errors='ignore').rstrip('.')
             epigraph=lineList[7]
             for character in ['[',']','\'','\"']:
                 epigraph = epigraph.replace(character,'')
                 longTitle = longTitle.replace(character,'')
+                author = author.replace(character,'')
+            if ',' in author:
+                index = author.find(',')
+                if (index != -1):
+                    author = author[index+2:]+" "+author[:index]
             epAuthorDate = lineList[16]
             if epAuthorDate == "null":
                 epAuthorDate = "5000"
             shortTitle=lineList[17]
             if (author == ""):
                 author = "null"
-            if (epAuthor!="" and epAuthor!="null"):
+            if (epAuthor!="" and epAuthor!="null" and any(c.isalpha() for c in epAuthor)):
                 targetFile.write(shortTitle+tab+author+tab+epAuthor+tab+pubDate+tab+epAuthorDate+"\n")
         lineNum +=1
-
 # read in csv
 def main():
     parser = argparse.ArgumentParser(description="allows manual title checking")

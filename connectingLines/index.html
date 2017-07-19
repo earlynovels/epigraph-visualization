@@ -734,9 +734,21 @@
           return d3.ascending(a.idDate, b.idDate);
         } else if (sortLeft=="alphabetize"){
           if (typeLeft=="title"){
-            return d3.ascending(a.id, b.id);
+            var checkThe = (a.idMulti.slice(0,4));
+            var checkA = (a.idMulti.slice(0,2));
+            var checkAn = (a.idMulti.slice(0,3));
+            if (checkThe === "The "){
+              return d3.ascending(a.id.slice(3).toLowerCase(), b.id.toLowerCase());
+            }
+            if (checkA === "A "){
+              return d3.ascending(a.id.slice(1).toLowerCase(), b.id.toLowerCase());
+            }
+            if (checkAn === "An "){
+              return d3.ascending(a.id.slice(2).toLowerCase(), b.id.toLowerCase());
+            }
+            return d3.ascending(a.id.toLowerCase(), b.id.toLowerCase());
           } else {
-            return d3.ascending(a.idAuthor, b.idAuthor);
+            return d3.ascending(a.idAuthor.toLowerCase(), b.idAuthor.toLowerCase());
           }
         } else {
           console.log("incorrect sorting name (left)")
