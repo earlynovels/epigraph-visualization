@@ -23,13 +23,13 @@
     cursor: default;
   }
   svg text.topLeftText:hover {
-    fill: RoyalBlue;
-    stroke: RoyalBlue;
+    fill: CornflowerBlue;
+    stroke: CornflowerBlue;
     cursor: pointer;
   }
   svg text.topRightText:hover {
-    fill: RoyalBlue;
-    stroke: RoyalBlue;
+    fill: CornflowerBlue;
+    stroke: CornflowerBlue;
     cursor: pointer;
   }
 
@@ -38,14 +38,14 @@
   }
 
   svg text.selectedHeading:hover {
-    fill: RoyalBlue;
-    stroke: RoyalBlue;
+    fill: CornflowerBlue;
+    stroke: CornflowerBlue;
     cursor: pointer;
   }
 
   svg text.deselectedHeading:hover {
-    fill: RoyalBlue;
-    stroke: RoyalBlue;
+    fill: CornflowerBlue;
+    stroke: CornflowerBlue;
     cursor: pointer;
   }
 
@@ -94,10 +94,10 @@
   var betweenSpaceX = 600;
   var betweenSpaceY = 45;
   var nodeSize = 6;
-  var highlightColorLeftClick = "navy";
-  var highlightColorRightClick = "navy";
-  var highlightColorLeftHover = "RoyalBlue";
-  var highlightColorRightHover = "RoyalBlue";
+  var highlightColorLeftClick = "Navy";
+  var highlightColorRightClick = "Navy";
+  var highlightColorLeftHover = "CornflowerBlue";
+  var highlightColorRightHover = "CornflowerBlue";
   var regColor = "black";
   var regLineColor = "rgb(70, 70, 70)";
   var regNodeColor = "grey";
@@ -108,6 +108,8 @@
   var thickNodeWidth = "1"
   var font = "Bellefair";
   var fontSize = "20px";
+  // if you modify fontSizeSorters, you'll have to modify the position of the arrows by hand.
+  var fontSizeSorters = 16;
   var fontSizeTitle = "23px";
   // default dates
   var minDate = 1700;
@@ -119,11 +121,10 @@
 
 
 
-  // non-design global varibles. Do not modify
+  // non-design global varibles. Do not modify.
   // default author view on left (as opposed to title)
   var typeLeft = "author";
   var headingAuthors = true;
-  var fontSizeSorters = 15;
   var maxString = "0px";
   var maxNum = 0;
   // var linesPresent = false;
@@ -934,12 +935,12 @@
             return leftAlign-3;
           })
           .attr("y", function() {
-            var total = Number(topAlign) - Number(betweenSpaceY)/3;
+            var total = Number(topAlign) - Number(betweenSpaceY)/2;
             return total;
           })
           .text( function () {
             if (sortLeft == "alphabetize"){
-              return "A-Z";
+              return "A - Z";
             } else if (sortLeft == "date"){
               return "DATE";
             }
@@ -968,12 +969,12 @@
             return leftAlign + betweenSpaceX - 3;
           })
           .attr("y", function() {
-            var total = Number(topAlign) - Number(betweenSpaceY)/3;
+            var total = Number(topAlign) - Number(betweenSpaceY)/2;
             return total;
           })
           .text( function () {
             if (sortRight == "alphabetize"){
-              return "A-Z";
+              return "A - Z";
             } else if (sortRight == "date"){
               return "DATE";
             }
@@ -999,19 +1000,19 @@
     var arrowLeft = svg.append("text")
         .attr("x", function() {
           if (sortLeft == "alphabetize"){
-            return leftAlign+15;
+            return leftAlign + 24;
           } else if (sortLeft == "date"){
-            return leftAlign+22;
+            return leftAlign + 24;
           }
         })
         .attr("y", function() {
-          var total = Number(topAlign) - Number(betweenSpaceY)/3 - 1;
+          var total = Number(topAlign) - Number(betweenSpaceY)/2 - .75;
           return total;
         })
         .text("↓")
         .attr("text-anchor", function() {return "middle";})
         .attr("font-family", font)
-        .attr("font-size", (fontSizeSorters-2).toString()+"px")
+        .attr("font-size", (fontSizeSorters-1).toString()+"px")
         .attr("fill", regColor)
         .attr("stroke", regColor)
         .style("cursor","default");
@@ -1020,19 +1021,19 @@
     var arrowRight = svg.append("text")
         .attr("x", function() {
           if (sortRight == "alphabetize"){
-            return leftAlign + betweenSpaceX + 15;
+            return leftAlign + betweenSpaceX + 24;
           } else if (sortRight == "date"){
-            return leftAlign + betweenSpaceX + 22;
+            return leftAlign + betweenSpaceX + 24;
           }
         })
         .attr("y", function() {
-          var total = Number(topAlign) - Number(betweenSpaceY)/3 - 1;
+          var total = Number(topAlign) - Number(betweenSpaceY)/2 -.75;
           return total;
         })
         .text("↓")
         .attr("text-anchor", function() {return "middle";})
         .attr("font-family", font)
-        .attr("font-size", (fontSizeSorters-2).toString()+"px")
+        .attr("font-size", (fontSizeSorters-1).toString()+"px")
         .attr("fill", regColor)
         .attr("stroke", regColor)
         .style("cursor","default");
