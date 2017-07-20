@@ -58,11 +58,15 @@
   }
   p {
     position: relative;
-    left: 350px;
+    left: 375px;
   }
   p1 {
     position: relative;
     left: -4000px;
+  }
+
+  div.hidden {
+    visibility: hidden;
   }
   /*div#visualization {
     height: 100vh;
@@ -76,7 +80,7 @@
   <div id="visualization">
     <div id="slider"></div>
   </div>
-  <div id="about">
+  <div id="about" class="hidden">
     <p>The Early Novels Database (END) "generates high-quality metadata about novels published between 1660 and 1850 in order to make early works of fiction more available <br />to both traditional and computational modes of humanistic study."
       This visualization utilizes a 1700-1790 subset of this  metadata to computationally explore connections<br /> between the early novel and any epigraphs within.
       The visualization’s design was inspired by the open-source HBO Recycling Program visualization.</p>
@@ -86,7 +90,7 @@
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <script>
   // set design variables
-  // MUST CHANGE CSS p to leftAlign-250
+  // MUST CHANGE CSS p to leftAlign-225
   // MINIMUM 450
   var leftAlign = 600;
   var topAlign = 225;
@@ -611,7 +615,8 @@
     };
   },
   function(data) {
-    console.log(data);
+
+
     var originalData = data;
     //booleans tell which side can be clicked on
     var allowedLeft = null;
@@ -639,12 +644,19 @@
         svgHeight = maxNum;
       }
 
-      var svg = d3.select("div")
+      var svg = d3.select("div#visualization")
       .append("svg")
         .attr("height",svgHeight)
         .attr("width","100%")
         .attr("class","innerSVG")
         .attr("aria-hidden","true");
+      try {
+        if (svg){
+          d3.select("div#about").attr("class","visible");
+        }
+      } catch(err) {
+
+      }
 
       // split the data until it only contains from min to max date
       data1 = splitData(minDate,maxDate,data);
